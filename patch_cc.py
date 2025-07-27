@@ -9,7 +9,9 @@ REPLACE_FLAGS = {
     '-fno-shrink-wrap': '',
     '-fno-shrink-wrap': '',
     '-fstrict-volatile-bitfields': '',
-    '-fno-tree-switch-conversion': ''
+    '-fno-tree-switch-conversion': '',
+    '-fzero-init-padding-bits=all': '',
+    '-fno-malloc-dce': ''
 }
 
 def fix_comm_args(comm: str):

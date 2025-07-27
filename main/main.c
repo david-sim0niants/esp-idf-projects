@@ -2,8 +2,9 @@
 
 #include <driver/gpio.h>
 
-#include "sonar.h"
+// #include "sonar.h"
 #include "wifi_ap.h"
+#include "st7735s-driver.h"
 
 void app_main(void)
 {
@@ -24,9 +25,13 @@ void app_main(void)
 
     start_wifi_ap(&ap_config);
 
-    gpio_install_isr_service(0);
-    sonar_main();
-    gpio_uninstall_isr_service();
+    st7735s_init();
+    st7735s_display_random();
+    st7735s_deinit();
+
+    // gpio_install_isr_service(0);
+    // sonar_main();
+    // gpio_uninstall_isr_service();
 
     stop_wifi_ap();
 }
