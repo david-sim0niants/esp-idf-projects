@@ -34,6 +34,7 @@ void st7735s_init(void);
 void st7735s_deinit(void);
 void st7735s_display_random(void);
 
+esp_err_t st7735s_reset();
 esp_err_t st7735s_set_color_mode(st7735s_ColorMode mode);
 void st7735s_draw(st7735s_AddressWindow window, const void *data);
 
@@ -43,7 +44,7 @@ void st7735s_write_data(const void *data);
 void st7735s_set_ras(st7735s_AddressSet ras);
 void st7735s_set_cas(st7735s_AddressSet cas);
 
-size_t st7735s_get_current_expected_data_size();
+size_t st7735s_get_current_expected_data_size(void);
 
 static inline size_t st7735s_get_window_cell_count(st7735s_AddressWindow *window)
 {
