@@ -41,15 +41,15 @@ void st7735s_draw(st7735s_AddressWindow window, const void *data);
 void st7735s_set_window(st7735s_AddressWindow *window);
 void st7735s_write_data(const void *data);
 
-void st7735s_set_ras(st7735s_AddressSet ras);
 void st7735s_set_cas(st7735s_AddressSet cas);
+void st7735s_set_ras(st7735s_AddressSet ras);
 
 size_t st7735s_get_current_expected_data_size(void);
 
 static inline size_t st7735s_get_window_cell_count(st7735s_AddressWindow *window)
 {
     assert(st7735s_is_valid_address_window(window));
-    return (window->rows.end - window->rows.start) * (window->cols.end - window->cols.start);
+    return (window->rows.end - window->rows.start + 1) * (window->cols.end - window->cols.start + 1);
 }
 
 static inline size_t st7735s_calc_expected_bufsize(st7735s_AddressWindow *window, st7735s_ColorMode mode)

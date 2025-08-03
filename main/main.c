@@ -26,6 +26,7 @@ void app_main(void)
     start_wifi_ap(&ap_config);
 
     st7735s_init();
+    st7735s_reset();
     st7735s_display_random();
     st7735s_deinit();
 

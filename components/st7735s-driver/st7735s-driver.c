@@ -21,8 +21,8 @@
 #define DATA_TRANSFER_CHUNK_SIZE 4092
 
 #define CMD_COLMOD 0x3A
-#define CMD_RASET 0x2B
 #define CMD_CASET 0x2A
+#define CMD_RASET 0x2B
 #define CMD_RAMWR 0x2C
 
 static struct {
@@ -89,6 +89,12 @@ static inline void set_data()
 static void send_cmd(uint8_t cmd)
 {
     set_command();
+    spi_transfer(&cmd, 8, 0);
+}
+
+static void send_cmd_expect_data(uint8_t cmd)
+{
+    set_command();
     spi_transfer(&cmd, 8, SPI_TRANS_CS_KEEP_ACTIVE);
 }
 
@@ -106,7 +112,7 @@ static void send_data(const void *data, const size_t size)
 static inline void run(uint8_t cmd, const void *data, size_t length)
 {
     spi_device_acquire_bus(handle.spi, portMAX_DELAY);
-    send_cmd(cmd);
+    send_cmd_expect_data(cmd);
     send_data(data, length);
     spi_device_release_bus(handle.spi);
 }
@@ -128,23 +134,36 @@ void st7735s_display_random(void)
 {
     st7735s_AddressWindow win = {
         .rows = {
-            .start = 0,
-            .end = 8,
+            .start = 1,
+            .end = 127,
         },
         .cols = {
-            .start = 0,
-            .end = 16,
+            .start = 1,
+            .end = 127,
         }
     };
-    size_t nr_pixels = 16 * 8;
-    uint16_t *buffer = malloc(nr_pixels * 2);
-    for (int i = 0; i < nr_pixels; ++i)
-        buffer[i] = 0xF800;
+
+    size_t nr_cells = st7735s_get_window_cell_count(&win);
+    uint16_t *buffer = malloc(nr_cells * 2);
+    for (int i = 0; i < nr_cells; ++i)
+        buffer[i] = 0x001F;
+
     while (true) {
-        st7735s_reset();
+        printf("=============== SOFTWARE RESET ================\n");
+        send_cmd(0x01); // Software reset
+        vTaskDelay(pdMS_TO_TICKS(150));
+
+        printf("=============== SLEEP OUT ================\n");
+        send_cmd(0x11); // Sleep out
+        vTaskDelay(pdMS_TO_TICKS(200));
+
+        printf("=============== DISPLAY ON ================\n");
+        send_cmd(0x29); // Display on
+        vTaskDelay(pdMS_TO_TICKS(200));
+
         st7735s_set_color_mode(st7735s_RGB565);
-        st7735s_draw(win, (uint8_t *)buffer);
-        vTaskDelay(1);
+        st7735s_draw(win, buffer);
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
 
@@ -183,8 +202,8 @@ void st7735s_draw(st7735s_AddressWindow window, const void *data)
 
 void st7735s_set_window(st7735s_AddressWindow *window)
 {
-    st7735s_set_ras(window->rows);
     st7735s_set_cas(window->cols);
+    st7735s_set_ras(window->rows);
 }
 
 void st7735s_write_data(const void *data)
@@ -200,14 +219,7 @@ static void run_aset_cmd(char type, st7735s_AddressSet as)
         as.end >> 8,
         as.end & 0xFF,
     };
-    run(type == 'r' ? CMD_RASET : CMD_CASET, data, 4);
-}
-
-void st7735s_set_ras(st7735s_AddressSet ras)
-{
-    assert(st7735s_is_valid_address_set(ras));
-    handle.cur_win.rows = ras;
-    run_aset_cmd('r', ras);
+    run(type == 'c' ? CMD_CASET : CMD_RASET, data, sizeof(data));
 }
 
 void st7735s_set_cas(st7735s_AddressSet cas)
@@ -215,6 +227,13 @@ void st7735s_set_cas(st7735s_AddressSet cas)
     assert(st7735s_is_valid_address_set(cas));
     handle.cur_win.cols = cas;
     run_aset_cmd('c', cas);
+}
+
+void st7735s_set_ras(st7735s_AddressSet ras)
+{
+    assert(st7735s_is_valid_address_set(ras));
+    handle.cur_win.rows = ras;
+    run_aset_cmd('r', ras);
 }
 
 size_t st7735s_get_current_expected_data_size(void)
